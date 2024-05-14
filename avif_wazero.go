@@ -10,7 +10,6 @@ import (
 	"image"
 	"image/color"
 	"io"
-	"os"
 	"sync"
 	"unsafe"
 
@@ -26,7 +25,6 @@ var decodeWasm []byte
 var encodeWasm []byte
 
 func decode(r io.Reader, configOnly, decodeAll bool) (*AVIF, image.Config, error) {
-	initializeDecoderOnce()
 
 	var err error
 	var cfg image.Config
@@ -270,11 +268,10 @@ var (
 	_decode api.Function
 	_encode api.Function
 
-	initializeDecoderOnce = sync.OnceFunc(initializeDecoder)
 	initializeEncoderOnce = sync.OnceFunc(initializeEncoder)
 )
 
-func initializeDecoder() {
+func init() {
 	ctx := context.Background()
 	rt := wazero.NewRuntime(ctx)
 
@@ -297,7 +294,7 @@ func initializeDecoder() {
 
 	wasi_snapshot_preview1.MustInstantiate(ctx, rt)
 
-	dec, err = rt.InstantiateModule(ctx, compiled, wazero.NewModuleConfig().WithStderr(os.Stderr).WithStdout(os.Stdout))
+	dec, err = rt.InstantiateModule(ctx, compiled, wazero.NewModuleConfig())
 	if err != nil {
 		panic(err)
 	}
@@ -330,7 +327,7 @@ func initializeEncoder() {
 
 	wasi_snapshot_preview1.MustInstantiate(ctx, rt)
 
-	enc, err = rt.InstantiateModule(ctx, compiled, wazero.NewModuleConfig().WithStderr(os.Stderr).WithStdout(os.Stdout))
+	enc, err = rt.InstantiateModule(ctx, compiled, wazero.NewModuleConfig())
 	if err != nil {
 		panic(err)
 	}
